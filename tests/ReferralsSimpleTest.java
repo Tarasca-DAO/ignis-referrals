@@ -33,14 +33,11 @@ public class ReferralsSimpleTest extends AbstractContractTest {
                 .recipient(BOB.getRsAccount())
                 .feeNQT(IGNIS.ONE_COIN)
                 .call();
-//        TransferAssetCall.create(2).secretPhrase(DAVE.getSecretPhrase())
-//                .asset(referralAssetId).quantityQNT(2l)
-//                .recipient(CHUCK.getRsAccount())
-//                .feeNQT(IGNIS.ONE_COIN)
-//                .call();
+
         generateBlock();
         Logger.logInfoMessage("TEST: messages(): Setup complete");
 
+        // The test sends a message to invite a known account "goodMessage"
         JO goodMessage = new JO();
         goodMessage.put("contract","ReferralsSimple");
         goodMessage.put("invitedAccount",CHUCK.getRsAccount());
@@ -62,12 +59,44 @@ public class ReferralsSimpleTest extends AbstractContractTest {
         JO retrievedGoodTransaction = response.getArray("prunableMessages").get(0);
         JO retrievedGoodMessage = JO.parse(retrievedGoodTransaction.getString("message"));
 
+        Assert.assertTrue(retrievedGoodTransaction.getString("senderRS").equals(ALICE.getRsAccount()));
+        Assert.assertTrue(retrievedGoodTransaction.getString("recipientRS").equals(CHUCK.getRsAccount()));
+        Assert.assertTrue(retrievedGoodMessage.getString("submittedBy").equals(contractName));
+        Assert.assertTrue(retrievedGoodMessage.getString("invitedBy").equals(BOB.getRsAccount()));
+        Assert.assertTrue(retrievedGoodMessage.getString("invitedFor").equals("season01"));
+        Logger.logInfoMessage("TEST: messages(): First message sent correctly");
+
+        // The test sends a message to invite a new account "newAccountMessage"
+        JO newAccountMessage = new JO();
+        newAccountMessage.put("contract","ReferralsSimple");
+        newAccountMessage.put("invitedAccount","ARDOR-6645-FEKY-BC5T-EPW5D");
+        TransferAssetCall.create(2)
+                .secretPhrase(BOB.getSecretPhrase())
+                .asset(referralAssetId)
+                .quantityQNT(1l)
+                .recipient(ALICE.getRsAccount())
+                .messageIsPrunable(true)
+                .message(newAccountMessage.toJSONString())
+                .feeNQT(IGNIS.ONE_COIN)
+                .call();
+
+        generateBlock();
+        generateBlock();
+        generateBlock();
+
+        response = GetPrunableMessagesCall.create(2).account("ARDOR-6645-FEKY-BC5T-EPW5D").otherAccount(ALICE.getRsAccount()).call();
+        JO retrievedNewAccountTransaction = response.getArray("prunableMessages").get(0);
+        JO retrievedNewAccountMessage = JO.parse(retrievedGoodTransaction.getString("message"));
 
         Assert.assertTrue(retrievedGoodTransaction.getString("senderRS").equals(ALICE.getRsAccount()));
         Assert.assertTrue(retrievedGoodTransaction.getString("recipientRS").equals(CHUCK.getRsAccount()));
         Assert.assertTrue(retrievedGoodMessage.getString("submittedBy").equals(contractName));
         Assert.assertTrue(retrievedGoodMessage.getString("invitedBy").equals(BOB.getRsAccount()));
         Assert.assertTrue(retrievedGoodMessage.getString("invitedFor").equals("season01"));
-        Logger.logInfoMessage("TEST: messages(): Stop test");
+
+        Logger.logInfoMessage("TEST: messages(): Second message sent correctly");
+
+
+        Logger.logInfoMessage("TEST: messages(): Done, stop test");
     }
 }
