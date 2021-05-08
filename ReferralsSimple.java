@@ -12,7 +12,7 @@ public class ReferralsSimple extends AbstractContract {
     @ValidateChain(accept = 2)
     public JO processTransaction(TransactionContext context){
         ReferralsSimple.ContractParams contractParams = context.getParams(ReferralsSimple.ContractParams.class);
-        long refAsset = contractParams.refAsset();
+        String refAsset = contractParams.refAsset();
         int DEADLINE = 180;
 
         // check if asset was received, else stop,
@@ -25,22 +25,24 @@ public class ReferralsSimple extends AbstractContract {
             // AssetTransfer Transaction
 
             JO attachment = triggerTransaction.getAttachmentJson();
-            if (attachment.getLong("asset") == refAsset){
+
+            if (attachment.getString("asset").equals(refAsset)){
                 // we've received the right asset, on the right account.
 
                 int version = attachment.getInt("version.PrunablePlainMessage");
                 if (version == 1){
-                    JO messageObj = attachment.getJo("message");
+                    JO messageObj = JO.parse(attachment.getString("message"));
                     String invitedAccount = messageObj.getString("invitedAccount");
                     JO response = RsConvertCall.create().account(invitedAccount).call();
 
-                    if(response.getString("accountRS") == invitedAccount){
-                        // String is an account.
+                    if(response.getString("accountRS").equals(invitedAccount)){
+                        // String is a valid account.
                         //send message to account
                         JO message = new JO();
                         message.put("invitedFor","season01");
                         message.put("invitedBy",triggerTransaction.getSenderRs());
                         SendMessageCall sendMessageCall = SendMessageCall.create(2).
+                                    recipient(invitedAccount).
                                     message(message.toJSONString()).
                                     messageIsText(true).
                                     messageIsPrunable(true).
@@ -68,8 +70,8 @@ public class ReferralsSimple extends AbstractContract {
     public interface ContractParams {
 
         @ContractSetupParameter
-        default long refAsset() {
-            return 2384570119093955894l;
+        default String refAsset() {
+            return "2384570119093955894l";
         }
     }
 }
