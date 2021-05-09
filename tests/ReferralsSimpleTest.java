@@ -3,6 +3,7 @@ package org.tarasca.contracts;
 
 import com.jelurida.ardor.contracts.ContractTestHelper;
 import nxt.addons.JO;
+import nxt.http.callers.GetAccountPropertiesCall;
 import nxt.http.callers.GetPrunableMessageCall;
 import nxt.http.callers.GetPrunableMessagesCall;
 import nxt.http.callers.TransferAssetCall;
@@ -12,7 +13,7 @@ import org.junit.Test;
 
 import com.jelurida.ardor.contracts.AbstractContractTest;
 
-import static com.jelurida.ardor.contracts.TarascaTester.initReferralAsset;
+import static org.tarasca.contracts.TarascaTester.initReferralAsset;
 import static nxt.blockchain.ChildChain.IGNIS;
 
 public class ReferralsSimpleTest extends AbstractContractTest {
@@ -52,21 +53,7 @@ public class ReferralsSimpleTest extends AbstractContractTest {
                 .call();
 
         generateBlock();
-        generateBlock();
-        generateBlock();
 
-        JO response = GetPrunableMessagesCall.create(2).account(CHUCK.getRsAccount()).otherAccount(ALICE.getRsAccount()).call();
-        JO retrievedGoodTransaction = response.getArray("prunableMessages").get(0);
-        JO retrievedGoodMessage = JO.parse(retrievedGoodTransaction.getString("message"));
-
-        Assert.assertTrue(retrievedGoodTransaction.getString("senderRS").equals(ALICE.getRsAccount()));
-        Assert.assertTrue(retrievedGoodTransaction.getString("recipientRS").equals(CHUCK.getRsAccount()));
-        Assert.assertTrue(retrievedGoodMessage.getString("submittedBy").equals(contractName));
-        Assert.assertTrue(retrievedGoodMessage.getString("invitedBy").equals(BOB.getRsAccount()));
-        Assert.assertTrue(retrievedGoodMessage.getString("invitedFor").equals("season01"));
-        Logger.logInfoMessage("TEST: messages(): First message sent correctly");
-
-        // The test sends a message to invite a new account "newAccountMessage"
         JO newAccountMessage = new JO();
         newAccountMessage.put("contract","ReferralsSimple");
         newAccountMessage.put("invitedAccount","ARDOR-6645-FEKY-BC5T-EPW5D");
@@ -82,19 +69,30 @@ public class ReferralsSimpleTest extends AbstractContractTest {
 
         generateBlock();
         generateBlock();
-        generateBlock();
 
-        response = GetPrunableMessagesCall.create(2).account("ARDOR-6645-FEKY-BC5T-EPW5D").otherAccount(ALICE.getRsAccount()).call();
-        JO retrievedNewAccountTransaction = response.getArray("prunableMessages").get(0);
-        JO retrievedNewAccountMessage = JO.parse(retrievedGoodTransaction.getString("message"));
 
-        Assert.assertTrue(retrievedGoodTransaction.getString("senderRS").equals(ALICE.getRsAccount()));
-        Assert.assertTrue(retrievedGoodTransaction.getString("recipientRS").equals(CHUCK.getRsAccount()));
-        Assert.assertTrue(retrievedGoodMessage.getString("submittedBy").equals(contractName));
-        Assert.assertTrue(retrievedGoodMessage.getString("invitedBy").equals(BOB.getRsAccount()));
-        Assert.assertTrue(retrievedGoodMessage.getString("invitedFor").equals("season01"));
+        Logger.logInfoMessage("TEST: messages(): Evaluating results");
+        JO response = GetAccountPropertiesCall.create().setter(ALICE.getRsAccount()).call();
+        //JO response = GetPrunableMessagesCall.create(2).account(CHUCK.getRsAccount()).otherAccount(ALICE.getRsAccount()).call();
 
-        Logger.logInfoMessage("TEST: messages(): Second message sent correctly");
+        JO retrievedPropertiesChuck = response.getArray("properties").get(1);
+        Assert.assertTrue(retrievedPropertiesChuck.getString("recipientRS").equals(CHUCK.getRsAccount()));
+        Assert.assertTrue(retrievedPropertiesChuck.getString("property").equals("tdao"));
+
+        JO retrievedValueChuck = JO.parse(retrievedPropertiesChuck.getString("value"));
+        Assert.assertTrue(retrievedValueChuck.getString("reason").equals("referral"));
+        Assert.assertTrue(retrievedValueChuck.getString("invitedBy").equals(BOB.getRsAccount()));
+        Assert.assertTrue(retrievedValueChuck.getString("invitedFor").equals("season01"));
+
+
+        JO retrievedPropertiesNew = response.getArray("properties").get(0);
+        Assert.assertTrue(retrievedPropertiesNew.getString("recipientRS").equals("ARDOR-6645-FEKY-BC5T-EPW5D"));
+        Assert.assertTrue(retrievedPropertiesNew.getString("property").equals("tdao"));
+
+        JO retrievedValueNew = JO.parse(retrievedPropertiesNew.getString("value"));
+        Assert.assertTrue(retrievedValueNew.getString("reason").equals("referral"));
+        Assert.assertTrue(retrievedValueNew.getString("invitedBy").equals(BOB.getRsAccount()));
+        Assert.assertTrue(retrievedValueNew.getString("invitedFor").equals("season01"));
 
 
         Logger.logInfoMessage("TEST: messages(): Done, stop test");

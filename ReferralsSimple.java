@@ -4,6 +4,7 @@ import nxt.addons.*;
 import nxt.blockchain.TransactionType;
 import nxt.http.callers.SendMessageCall;
 import nxt.http.callers.RsConvertCall;
+import nxt.http.callers.SetAccountPropertyCall;
 import nxt.http.responses.TransactionResponse;
 import static nxt.blockchain.ChildChain.IGNIS;
 
@@ -41,13 +42,19 @@ public class ReferralsSimple extends AbstractContract {
                         JO message = new JO();
                         message.put("invitedFor","season01");
                         message.put("invitedBy",triggerTransaction.getSenderRs());
-                        SendMessageCall sendMessageCall = SendMessageCall.create(2).
-                                    recipient(invitedAccount).
-                                    message(message.toJSONString()).
-                                    messageIsText(true).
-                                    messageIsPrunable(true).
-                                    deadline(DEADLINE);
-                        return context.createTransaction(sendMessageCall);
+                        message.put("reason","referral");
+//                        SendMessageCall sendMessageCall = SendMessageCall.create(2).
+//                                    recipient(invitedAccount).
+//                                    message(message.toJSONString()).
+//                                    messageIsText(true).
+//                                    messageIsPrunable(true).
+//                                    deadline(DEADLINE);
+                        SetAccountPropertyCall setPropertyCall = SetAccountPropertyCall.create(2)
+                                .recipient(invitedAccount)
+                                .property("tdao")
+                                .value(message.toJSONString())
+                                .deadline(DEADLINE);
+                        return context.createTransaction(setPropertyCall);
                     }
                     else {
                         return context.generateInfoResponse("transaction attached message does not contain invited Account");
