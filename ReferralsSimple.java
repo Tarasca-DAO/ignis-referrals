@@ -68,26 +68,36 @@ public class ReferralsSimple extends AbstractContract {
 
 
                             // check current referral property of sender, increase count by one.
-                            response = GetAccountPropertiesCall.create().setter(context.getAccountRs()).recipient(triggerTransaction.getSenderRs()).call();
-                            JA propsSender = response.getArray("properties");
-                            List<JO> foundSenderProps = propsSender.objects().stream().filter(
-                                    (el) -> {
-                                        String property = el.getString("property");
-                                        return property.equals("tdao.referral");
-                                    }).collect(Collectors.toList());
+                            response = GetAccountPropertiesCall.create()
+                                    .setter(context.getAccountRs())
+                                    .recipient(triggerTransaction.getSenderRs())
+                                    .property("tdao.referral")
+                                    .call();
+
+                            //context.logInfoMessage("referral account properties response: " + response.toJSONString());
+
+                            JA foundSenderProps = response.getArray("properties");
+                            //context.logInfoMessage("referral account properties array: " + foundSenderProps.toJSONArray().toJSONString());
+//                            List<JO> foundSenderProps = propsSender.objects().stream().filter(
+//                                    (el) -> {
+//                                        String property = el.getString("property");
+//                                        return property.equals("tdao.referral");
+//                                    }).collect(Collectors.toList());
 
                             int curNumReferrals = 0;
                             JO message_referral = new JO();
                             // should only exist once!
                             if (foundSenderProps.size()==0) {
                                 // first set
-                                message_referral.put("numReferrals",curNumReferrals+1);
+                                message_referral.put("numReferrals",1);
                             }
                             else if (foundSenderProps.size()==1) {
                                 JO prop = foundSenderProps.get(0);
-                                Assert.assertTrue(prop.getString("property").equals("tdao.referral"));
+                                context.logInfoMessage("referral account properties element: " + prop.toJSONString());
+                                //Assert.assertTrue(prop.getString("property").equals("tdao.referral"));
                                 JO value = JO.parse(prop.getString("value"));
                                 curNumReferrals = value.getInt("numReferrals");
+                                //context.logInfoMessage("referral account current number of active referrals: " + curNumReferrals);
                                 message_referral.put("numReferrals",curNumReferrals+1);
                             }
                             else if (foundSenderProps.size()>1) {
